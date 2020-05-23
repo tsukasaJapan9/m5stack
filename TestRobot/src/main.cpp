@@ -5,6 +5,8 @@
 
 // for wifi
 WiFiClient wifiClient;
+const char* SSID = "ssid";
+const char* PASSWORD = "password";
 
 // command
 int command = 0;
@@ -55,7 +57,7 @@ void setup(void) {
 
   // wifi connetction
 
-  WiFi.begin("SSID", "password");
+  WiFi.begin(SSID, PASSWORD);
   M5.Lcd.println("Wait for WiFi... ");
 
   while(WiFi.status() != WL_CONNECTED) {
