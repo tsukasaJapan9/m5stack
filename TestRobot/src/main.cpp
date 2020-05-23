@@ -19,7 +19,7 @@ int LEFT_SERVO_PIN = 22;
 /*=============================== */
 /* MQTT */
 /*=============================== */
-char *THING_NAME = "M5Stack";
+const char *THING_NAME = "M5Stack";
 PubSubClient mqttClient;
 
 void callback(char* topic, byte* payload, unsigned int length) {
