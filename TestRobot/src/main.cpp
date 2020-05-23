@@ -1,14 +1,49 @@
 #include <M5Stack.h>
 #include <Arduino.h>
 #include <WiFi.h>
-#include <WiFiMulti.h>
+#include <PubSubClient.h>
 
-// ======== for wifi =========
-WiFiMulti WiFiMulti;
+// for wifi
+WiFiClient wifiClient;
 
-// ======== for clock =========
-#define TFT_GREY 0xBDF7
-#define TFT_ROBOT 0x0082
+// command
+int command = 0;
+
+// for servo
+int RIGHT_SERVO_CH = 0;
+int LEFT_SERVO_CH = 1;
+
+int RIGHT_SERVO_PIN = 21;
+int LEFT_SERVO_PIN = 22;
+
+/*=============================== */
+/* MQTT */
+/*=============================== */
+char *THING_NAME = "M5Stack";
+PubSubClient mqttClient;
+
+void callback(char* topic, byte* payload, unsigned int length) {
+  String buf_t = String(topic);
+  M5.Lcd.println(buf_t);
+
+  payload[length] = '\0';
+  String buf_s = String((char*) payload);
+  M5.Lcd.println(buf_s);
+    
+  command = buf_s.toInt();
+  M5.Lcd.printf("cmd:%d\n", command);
+}
+
+void connectToBroker() {
+  M5.Lcd.println("trying to connect MQTT broker");
+  mqttClient.setServer("192.168.11.9", 1883);
+  mqttClient.setCallback(callback);
+  mqttClient.setClient(wifiClient);
+  if (!mqttClient.connect(THING_NAME)) {
+    M5.Lcd.println(mqttClient.state());
+  }
+  mqttClient.subscribe("m5stack/control/#");
+}
 
 /*=============================== */
 /* setup */
@@ -19,39 +54,48 @@ void setup(void) {
   Serial.begin(115200);
 
   // wifi connetction
-  WiFiMulti.addAP("Buffalo-G-4EF0", "grtt4iss8yfn4");
+
+  WiFi.begin("SSID", "password");
   M5.Lcd.println("Wait for WiFi... ");
 
-  while(WiFiMulti.run() != WL_CONNECTED) {
-      M5.Lcd.println(".");
-      delay(500);
+  while(WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    M5.Lcd.println(".");
   }
 
   M5.Lcd.println("WiFi connected");
   M5.Lcd.println("IP address: ");
   M5.Lcd.println(WiFi.localIP());
-  delay(500);
 
-  M5.Lcd.setTextSize(1);
-  M5.Lcd.setTextColor(TFT_GREY, TFT_ROBOT);
+  connectToBroker();
+  M5.Lcd.println("success to connect MQTT broker");
 
   // PWMの設定
-  ledcSetup(0, 50, 10); // チャネル, 周波数=50Hz, 分解能=0-1023
-  ledcAttachPin(21, 0); // ピン番号, チャネル
+  ledcSetup(RIGHT_SERVO_CH, 50, 10); // チャネル, 周波数=50Hz, 分解能=0-1023
+  ledcAttachPin(RIGHT_SERVO_PIN, RIGHT_SERVO_CH); // ピン番号, チャネル
 
-  ledcSetup(1, 50, 10); // チャネル, 周波数=50Hz, 分解能=0-1023
-  ledcAttachPin(22, 1); // ピン番号, チャネル
+  ledcSetup(LEFT_SERVO_CH, 50, 10); // チャネル, 周波数=50Hz, 分解能=0-1023
+  ledcAttachPin(LEFT_SERVO_PIN, LEFT_SERVO_CH); // ピン番号, チャネル
+}
+
+/*=============================== */
+/* servo control */
+/*=============================== */
+void moveServo(int channel, int angle) {
+  ledcWrite(channel, map(angle, -90, 90, 26, 123));
 }
 
 /*=============================== */
 /* main loop */
 /*=============================== */
 void loop() {
-  ledcWrite(0, map(-90, -90, 90, 26, 123));
-  ledcWrite(1, map(-90, -90, 90, 26, 123));
-  delay(1000); 
+  mqttClient.loop();
 
-  ledcWrite(0, map(90, -90, 90, 26, 123));
-  ledcWrite(1, map(90, -90, 90, 26, 123));
-  delay(1000); 
+  if (command == 1) {
+    moveServo(RIGHT_SERVO_CH, -90);
+    moveServo(LEFT_SERVO_CH, -90);
+  } else if (command == 2) {
+    moveServo(RIGHT_SERVO_CH, 90);
+    moveServo(LEFT_SERVO_CH, 90);
+  }
 }
