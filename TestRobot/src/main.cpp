@@ -5,18 +5,22 @@
 
 // for wifi
 WiFiClient wifiClient;
-const char* SSID = "ssid";
-const char* PASSWORD = "password";
+#define SSID "Buffalo-G-4EF0"
+#define PASSWORD "grtt4iss8yfn4"
+
+// #define SSID "SSID"
+// #define PASSWORD "password"
 
 // command
 int command = 0;
+int counter = 0;
 
 // for servo
-int RIGHT_SERVO_CH = 0;
-int LEFT_SERVO_CH = 1;
+#define RIGHT_SERVO_CH 0
+#define LEFT_SERVO_CH 1
 
-int RIGHT_SERVO_PIN = 21;
-int LEFT_SERVO_PIN = 22;
+#define RIGHT_SERVO_PIN 21
+#define LEFT_SERVO_PIN 22
 
 /*=============================== */
 /* MQTT */
@@ -34,6 +38,8 @@ void callback(char* topic, byte* payload, unsigned int length) {
     
   command = buf_s.toInt();
   M5.Lcd.printf("cmd:%d\n", command);
+
+  counter = 0;
 }
 
 void connectToBroker() {
@@ -44,7 +50,7 @@ void connectToBroker() {
   if (!mqttClient.connect(THING_NAME)) {
     M5.Lcd.println(mqttClient.state());
   }
-  mqttClient.subscribe("m5stack/control/#");
+  mqttClient.subscribe("robot/command/#");
 }
 
 /*=============================== */
@@ -87,17 +93,63 @@ void moveServo(int channel, int angle) {
   ledcWrite(channel, map(angle, -90, 90, 26, 123));
 }
 
+// spd = (-100, 100)
+void moveWheel(int channel, float spd) {
+  // float _spd = spd + 1.5;
+  // if (_spd < 0) {
+  //   _spd = 0.0;
+  // } else if (_spd > 2) {
+  //   _spd = 2.0;
+  // }
+  // int pulseCount = int(_spd * 1023 / 20);
+
+  // min = 0 * 1023 / 20
+  // max = 2.0 * 1023 / 20
+
+  ledcWrite(channel, map(spd, -100, 100, 1, 102));
+}
+
 /*=============================== */
 /* main loop */
 /*=============================== */
 void loop() {
   mqttClient.loop();
 
-  if (command == 1) {
-    moveServo(RIGHT_SERVO_CH, -90);
-    moveServo(LEFT_SERVO_CH, -90);
+  float spd = 15;
+  float duration_count = 15000;
+  float turn_duration_count = 5000;
+
+  if (command == 0){
+    moveWheel(RIGHT_SERVO_CH, 0);
+    moveWheel(LEFT_SERVO_CH, 0);
+    counter = 0;
+  } else if (command == 1) {
+    moveWheel(RIGHT_SERVO_CH, -spd);
+    moveWheel(LEFT_SERVO_CH, spd);
+    counter++;
+    if (counter > duration_count) {
+      command = 0;
+    }
   } else if (command == 2) {
-    moveServo(RIGHT_SERVO_CH, 90);
-    moveServo(LEFT_SERVO_CH, 90);
+    moveWheel(RIGHT_SERVO_CH, spd);
+    moveWheel(LEFT_SERVO_CH, -spd);
+    counter++;
+    if (counter > duration_count) {
+      command = 0;
+    }
+  } else if (command == 3) {
+    moveWheel(RIGHT_SERVO_CH, spd);
+    moveWheel(LEFT_SERVO_CH, spd);
+    counter++;
+    if (counter > turn_duration_count) {
+      command = 0;
+    }
+  } else if (command == 4) {
+    moveWheel(RIGHT_SERVO_CH, -spd);
+    moveWheel(LEFT_SERVO_CH, -spd);
+    counter++;
+    if (counter > turn_duration_count) {
+      command = 0;
+    }
   }
 }

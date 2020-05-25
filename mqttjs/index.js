@@ -45,20 +45,20 @@ process.stdin.on('keypress', function (ch, key) {
     }
 
     if (key && key.name == 'up') {
-        console.log("page up")
+        console.log("up")
         forward();
     }
     if (key && key.name == 'down') {
-        console.log("page down")
+        console.log("down")
         backward();
     }
     if (key && key.name == 'right') {
-        console.log("home")
+        console.log("right")
         right();
     }
 
     if (key && key.name == 'left') {
-        console.log("end")
+        console.log("left")
         left();
     }
 });
