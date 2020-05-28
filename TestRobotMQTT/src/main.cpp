@@ -5,8 +5,6 @@
 
 // for wifi
 WiFiClient wifiClient;
-#define SSID "Buffalo-G-4EF0"
-#define PASSWORD "grtt4iss8yfn4"
 
 // #define SSID "SSID"
 // #define PASSWORD "password"
