@@ -123,8 +123,8 @@ void moveWheel(int channel, float spd) {
 /*=============================== */
 void loop() {
   float spd = 15;
-  float duration_count = 15000;
-  float turn_duration_count = 5000;
+  float duration_count = 15000 * 3;
+  float turn_duration_count = 5000 * 3;
 
   if (command == 0){
     moveWheel(RIGHT_SERVO_CH, 0);
